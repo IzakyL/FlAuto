@@ -1,6 +1,6 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
-import '../models/course.dart';
+import '../models/event.dart';
 
 class DatabaseService {
   static Database? _database;
@@ -12,40 +12,37 @@ class DatabaseService {
   }
 
   Future<Database> _initDatabase() async {
-    String path = join(await getDatabasesPath(), 'courses.db');
+    String path = join(await getDatabasesPath(), 'events.db');
     return await openDatabase(
       path,
       version: 1,
       onCreate: (Database db, int version) async {
         await db.execute('''
-          CREATE TABLE courses(
+          CREATE TABLE events(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT,
-            teacher TEXT,
-            classroom TEXT,
-            weekday INTEGER,
             startTime INTEGER,
             endTime INTEGER,
-            startWeek INTEGER,
-            endWeek INTEGER
+            description TEXT,
+            location TEXT
           )
         ''');
       },
     );
   }
 
-  Future<void> insertCourse(Course course) async {
+  Future<void> insertEvent(Event event) async {
     final db = await database;
     await db.insert(
-      'courses',
-      course.toMap(),
+      'events',
+      event.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
   }
 
-  Future<List<Course>> getCourses() async {
+  Future<List<Event>> getEvents() async {
     final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query('courses');
-    return List.generate(maps.length, (i) => Course.fromMap(maps[i]));
+    final List<Map<String, dynamic>> maps = await db.query('events');
+    return List.generate(maps.length, (i) => Event.fromMap(maps[i]));
   }
 }

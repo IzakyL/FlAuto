@@ -15,7 +15,7 @@ class MainActivity : FlutterActivity() {
     private fun createNotificationChannel() {
         val channel = NotificationChannel(
             "channel_id",
-            "Course Schedule",
+            "Event Schedule",
             NotificationManager.IMPORTANCE_HIGH
         )
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager

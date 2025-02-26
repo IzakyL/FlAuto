@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/course.dart';
+import '../models/event.dart';
 import '../services/database.dart';
 import 'dart:math' as math;
 
@@ -10,58 +10,45 @@ class ScheduleScreen extends StatefulWidget {
   _ScheduleScreenState createState() => _ScheduleScreenState();
 }
 
-class _ScheduleScreenState extends State<ScheduleScreen> with SingleTickerProviderStateMixin {
+class _ScheduleScreenState extends State<ScheduleScreen>
+    with SingleTickerProviderStateMixin {
   final DatabaseService _databaseService = DatabaseService();
-  List<Course> _courses = [];
+  List<Event> _events = [];
   bool _isLoading = true;
   int _currentWeek = 1; // 当前周次
   late TabController _tabController;
   final List<String> _weekdays = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
   
-  // 课程时间表（根据学校实际情况调整）
-  final List<Map<String, dynamic>> _classTimes = [
-    {"index": 1, "start": "8:00", "end": "8:45"},
-    {"index": 2, "start": "8:55", "end": "9:40"},
-    {"index": 3, "start": "10:00", "end": "10:45"},
-    {"index": 4, "start": "10:55", "end": "11:40"},
-    {"index": 5, "start": "14:00", "end": "14:45"},
-    {"index": 6, "start": "14:55", "end": "15:40"},
-    {"index": 7, "start": "16:00", "end": "16:45"},
-    {"index": 8, "start": "16:55", "end": "17:40"},
-    {"index": 9, "start": "19:00", "end": "19:45"},
-    {"index": 10, "start": "19:55", "end": "20:40"},
-    {"index": 11, "start": "20:50", "end": "21:35"},
-  ];
+  // 学期开始时间
+  final DateTime _semesterStart = DateTime(2024, 2, 26);
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    _loadCourses();
+    _loadEvents();
     _calculateCurrentWeek();
   }
 
   // 计算当前周次
   void _calculateCurrentWeek() {
-    // 假设学期开始时间为2024-02-26
-    DateTime semesterStart = DateTime(2024, 2, 26);
     DateTime now = DateTime.now();
-    int daysSinceSemesterStart = now.difference(semesterStart).inDays;
+    int daysSinceSemesterStart = now.difference(_semesterStart).inDays;
     setState(() {
       _currentWeek = (daysSinceSemesterStart / 7).floor() + 1;
     });
   }
 
   // 加载课程数据
-  Future<void> _loadCourses() async {
+  Future<void> _loadEvents() async {
     setState(() {
       _isLoading = true;
     });
     
     try {
-      final courses = await _databaseService.getCourses();
+      final events = await _databaseService.getEvents();
       setState(() {
-        _courses = courses;
+        _events = events;
         _isLoading = false;
       });
     } catch (e) {
@@ -82,7 +69,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> with SingleTickerProvid
         actions: [
           IconButton(
             icon: Icon(Icons.refresh),
-            onPressed: _loadCourses,
+            onPressed: _loadEvents,
           ),
           PopupMenuButton<int>(
             onSelected: (int value) {
@@ -122,20 +109,22 @@ class _ScheduleScreenState extends State<ScheduleScreen> with SingleTickerProvid
 
   // 构建日视图
   Widget _buildDayView() {
-    // 获取当前星期几 (1-7, 周一到周日)
-    int todayWeekday = DateTime.now().weekday;
+    // 获取当前日期
+    DateTime today = DateTime.now();
     
-    // 筛选今天且在当前周有课的课程
-    List<Course> todayCourses = _courses.where((course) {
-      return course.weekday == todayWeekday && 
-             _currentWeek >= course.startWeek && 
-             _currentWeek <= course.endWeek;
+    // 筛选今天的课程
+    List<Event> todayEvents = _events.where((event) {
+      // 检查日期是否是今天
+      DateTime eventDate = event.startTime;
+      return eventDate.year == today.year && 
+             eventDate.month == today.month && 
+             eventDate.day == today.day;
     }).toList();
     
     // 按照开始时间排序
-    todayCourses.sort((a, b) => a.startTime.compareTo(b.startTime));
+    todayEvents.sort((a, b) => a.startTime.compareTo(b.startTime));
     
-    if (todayCourses.isEmpty) {
+    if (todayEvents.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -153,12 +142,12 @@ class _ScheduleScreenState extends State<ScheduleScreen> with SingleTickerProvid
     
     return ListView.builder(
       padding: EdgeInsets.all(8),
-      itemCount: todayCourses.length,
+      itemCount: todayEvents.length,
       itemBuilder: (context, index) {
-        final course = todayCourses[index];
+        final event = todayEvents[index];
         
         // 判断课程状态：未开始、进行中、已结束
-        String status = _getCourseStatus(course);
+        String status = _getEventStatus(event);
         Color statusColor;
         switch (status) {
           case '进行中':
@@ -180,7 +169,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> with SingleTickerProvid
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  course.name,
+                  event.name,
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
                 Container(
@@ -204,30 +193,32 @@ class _ScheduleScreenState extends State<ScheduleScreen> with SingleTickerProvid
                   children: [
                     Icon(Icons.access_time, size: 16, color: Colors.grey),
                     SizedBox(width: 4),
-                    Text('第${course.startTime}-${course.endTime}节'),
+                    Text('${_formatTime(event.startTime)} - ${_formatTime(event.endTime)}'),
                     SizedBox(width: 16),
                     Icon(Icons.location_on, size: 16, color: Colors.grey),
                     SizedBox(width: 4),
-                    Text(course.classroom),
+                    Text(event.location),
                   ],
                 ),
                 SizedBox(height: 4),
                 Row(
                   children: [
-                    Icon(Icons.person, size: 16, color: Colors.grey),
+                    Icon(Icons.description, size: 16, color: Colors.grey),
                     SizedBox(width: 4),
-                    Text(course.teacher),
-                    SizedBox(width: 16),
-                    Icon(Icons.date_range, size: 16, color: Colors.grey),
-                    SizedBox(width: 4),
-                    Text('第${course.startWeek}-${course.endWeek}周'),
+                    Expanded(
+                      child: Text(
+                        event.description,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                   ],
                 ),
               ],
             ),
             onTap: () {
               // 点击课程显示详情
-              _showCourseDetails(course);
+              _showEventDetails(event);
             },
           ),
         );
@@ -237,12 +228,18 @@ class _ScheduleScreenState extends State<ScheduleScreen> with SingleTickerProvid
 
   // 构建周视图
   Widget _buildWeekView() {
-    // 筛选当前周的课程
-    List<Course> weekCourses = _courses.where((course) {
-      return _currentWeek >= course.startWeek && _currentWeek <= course.endWeek;
+    // 获取本周的开始日期（周一）
+    DateTime now = DateTime.now();
+    DateTime weekStart = now.subtract(Duration(days: now.weekday - 1));
+    
+    // 筛选本周的课程
+    List<Event> weekEvents = _events.where((event) {
+      DateTime eventDate = event.startTime;
+      DateTime weekEnd = weekStart.add(Duration(days: 6));
+      return !eventDate.isBefore(weekStart) && !eventDate.isAfter(weekEnd);
     }).toList();
     
-    if (weekCourses.isEmpty) {
+    if (weekEvents.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -258,8 +255,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> with SingleTickerProvid
       );
     }
     
-    // 课程表网格的最大节数
-    int maxClassTime = 11;
+    // 定义每天的时间段（按小时）
+    int startHour = 8;  // 从早上8点开始
+    int endHour = 22;   // 到晚上10点结束
+    int totalHours = endHour - startHour;
     
     return SingleChildScrollView(
       child: Column(
@@ -275,7 +274,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> with SingleTickerProvid
               children: [
                 // 左侧时间栏占位
                 Container(
-                  width: 30,
+                  width: 50,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     border: Border(right: BorderSide(color: Colors.grey.shade300)),
@@ -283,7 +282,11 @@ class _ScheduleScreenState extends State<ScheduleScreen> with SingleTickerProvid
                 ),
                 // 星期几栏
                 ...List.generate(7, (index) {
-                  bool isToday = index + 1 == DateTime.now().weekday;
+                  DateTime dayDate = weekStart.add(Duration(days: index));
+                  String dayStr = '${dayDate.month}/${dayDate.day}';
+                  bool isToday = dayDate.year == now.year && 
+                                 dayDate.month == now.month && 
+                                 dayDate.day == now.day;
                   return Expanded(
                     child: Container(
                       alignment: Alignment.center,
@@ -291,11 +294,20 @@ class _ScheduleScreenState extends State<ScheduleScreen> with SingleTickerProvid
                         color: isToday ? Colors.blue.withOpacity(0.2) : null,
                         border: Border(right: BorderSide(color: Colors.grey.shade300)),
                       ),
-                      child: Text(
-                        _weekdays[index],
-                        style: TextStyle(
-                          fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
-                        ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            _weekdays[index],
+                            style: TextStyle(
+                              fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
+                            ),
+                          ),
+                          Text(
+                            dayStr,
+                            style: TextStyle(fontSize: 10),
+                          ),
+                        ],
                       ),
                     ),
                   );
@@ -306,15 +318,16 @@ class _ScheduleScreenState extends State<ScheduleScreen> with SingleTickerProvid
           
           // 课程表主体
           SizedBox(
-            height: maxClassTime * 60.0,  // 每节课高度60
+            height: totalHours * 60.0,  // 每小时高度60
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // 左侧时间栏
                 SizedBox(
-                  width: 30,
+                  width: 50,
                   child: Column(
-                    children: List.generate(maxClassTime, (index) {
+                    children: List.generate(totalHours, (index) {
+                      int hour = index + startHour;
                       return Container(
                         height: 60,
                         alignment: Alignment.center,
@@ -324,20 +337,22 @@ class _ScheduleScreenState extends State<ScheduleScreen> with SingleTickerProvid
                             bottom: BorderSide(color: Colors.grey.shade300),
                           ),
                         ),
-                        child: Text('${index + 1}'),
+                        child: Text('$hour:00'),
                       );
                     }),
                   ),
                 ),
                 
                 // 课程格子
-                ...List.generate(7, (weekday) {
+                ...List.generate(7, (dayIndex) {
+                  DateTime currentDay = weekStart.add(Duration(days: dayIndex));
+                  
                   return Expanded(
                     child: Stack(
                       children: [
                         // 背景网格
                         Column(
-                          children: List.generate(maxClassTime, (index) {
+                          children: List.generate(totalHours, (hourIndex) {
                             return Container(
                               height: 60,
                               decoration: BoxDecoration(
@@ -351,42 +366,51 @@ class _ScheduleScreenState extends State<ScheduleScreen> with SingleTickerProvid
                         ),
                         
                         // 课程卡片
-                        ...weekCourses.where((course) => course.weekday == weekday + 1).map((course) {
-                          double top = (course.startTime - 1) * 60.0;
-                          double height = (course.endTime - course.startTime + 1) * 60.0;
+                        ...weekEvents.where((event) {
+                          DateTime eventDate = event.startTime;
+                          return eventDate.year == currentDay.year &&
+                                 eventDate.month == currentDay.month &&
+                                 eventDate.day == currentDay.day;
+                        }).map((event) {
+                          double startMinutes = (event.startTime.hour * 60 + event.startTime.minute).toDouble();
+                          double endMinutes = (event.endTime.hour * 60 + event.endTime.minute).toDouble();
+                          
+                          // 计算位置
+                          double top = (startMinutes - startHour * 60) * (60 / 60);
+                          double height = (endMinutes - startMinutes) * (60 / 60);
                           
                           // 为每个课程生成随机但固定的颜色
-                          Color courseColor = Color((math.Random(course.name.hashCode).nextDouble() * 0xFFFFFF).toInt()).withOpacity(1.0);
+                          Color eventColor = Color((math.Random(event.name.hashCode).nextDouble() * 0xFFFFFF).toInt()).withOpacity(1.0);
                           // 调整颜色亮度，让它不太暗也不太亮
-                          HSLColor hslColor = HSLColor.fromColor(courseColor);
-                          courseColor = hslColor.withLightness(0.7).withSaturation(0.5).toColor();
+                          HSLColor hslColor = HSLColor.fromColor(eventColor);
+                          eventColor = hslColor.withLightness(0.7).withSaturation(0.5).toColor();
                           
                           return Positioned(
                             top: top,
                             left: 0,
                             right: 0,
-                            height: height,
+                            height: height > 10 ? height : 10, // 最小高度为10
                             child: GestureDetector(
-                              onTap: () => _showCourseDetails(course),
+                              onTap: () => _showEventDetails(event),
                               child: Container(
                                 margin: EdgeInsets.all(1),
                                 padding: EdgeInsets.all(4),
                                 decoration: BoxDecoration(
-                                  color: courseColor,
+                                  color: eventColor,
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      course.name,
+                                      event.name,
                                       style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                     if (height > 40) // 只在足够高的情况下显示额外信息
                                       Text(
-                                        course.classroom,
+                                        event.location,
                                         style: TextStyle(fontSize: 10, color: Colors.white),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
@@ -410,20 +434,19 @@ class _ScheduleScreenState extends State<ScheduleScreen> with SingleTickerProvid
   }
 
   // 显示课程详情对话框
-  void _showCourseDetails(Course course) {
+  void _showEventDetails(Event event) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(course.name),
+        title: Text(event.name),
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            _buildDetailRow(Icons.person, '教师', course.teacher),
-            _buildDetailRow(Icons.location_on, '教室', course.classroom),
-            _buildDetailRow(Icons.access_time, '时间', '第${course.startTime}-${course.endTime}节'),
-            _buildDetailRow(Icons.calendar_today, '周次', '第${course.startWeek}-${course.endWeek}周'),
-            _buildDetailRow(Icons.today, '星期', '周${['一', '二', '三', '四', '五', '六', '日'][course.weekday - 1]}'),
+            _buildDetailRow(Icons.access_time, '开始时间', _formatDateTime(event.startTime)),
+            _buildDetailRow(Icons.access_time_filled, '结束时间', _formatDateTime(event.endTime)),
+            _buildDetailRow(Icons.location_on, '地点', event.location),
+            _buildDetailRow(Icons.description, '描述', event.description),
           ],
         ),
         actions: [
@@ -452,28 +475,25 @@ class _ScheduleScreenState extends State<ScheduleScreen> with SingleTickerProvid
   }
 
   // 获取课程当前状态
-  String _getCourseStatus(Course course) {
+  String _getEventStatus(Event event) {
     DateTime now = DateTime.now();
-    TimeOfDay currentTime = TimeOfDay.fromDateTime(now);
-    int currentMinutes = currentTime.hour * 60 + currentTime.minute;
-    
-    // 解析课程的开始和结束时间
-    String startTimeString = _classTimes[course.startTime - 1]['start'];
-    String endTimeString = _classTimes[course.endTime - 1]['end'];
-    
-    List<String> startParts = startTimeString.split(':');
-    List<String> endParts = endTimeString.split(':');
-    
-    int startMinutes = int.parse(startParts[0]) * 60 + int.parse(startParts[1]);
-    int endMinutes = int.parse(endParts[0]) * 60 + int.parse(endParts[1]);
-    
-    if (currentMinutes < startMinutes) {
+    if (now.isBefore(event.startTime)) {
       return '未开始';
-    } else if (currentMinutes > endMinutes) {
+    } else if (now.isAfter(event.endTime)) {
       return '已结束';
     } else {
       return '进行中';
     }
+  }
+
+  // 格式化时间 (HH:MM)
+  String _formatTime(DateTime dateTime) {
+    return '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+  }
+
+  // 格式化日期和时间
+  String _formatDateTime(DateTime dateTime) {
+    return '${dateTime.year}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.day.toString().padLeft(2, '0')} ${_formatTime(dateTime)}';
   }
 
   @override
