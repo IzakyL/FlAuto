@@ -10,11 +10,11 @@ class WebScraperService {
   
   // 打开系统浏览器访问指定URL
   Future<void> openBrowserForLogin(String url) async {
-    final Uri _url = Uri.parse(url);
-    if (await canLaunchUrl(_url)) {
-      await launchUrl(_url, mode: LaunchMode.externalApplication);
+    final Uri url0 = Uri.parse(url);
+    if (await canLaunchUrl(url0)) {
+      await launchUrl(url0, mode: LaunchMode.externalApplication);
     } else {
-      throw 'Could not launch $_url';
+      throw 'Could not launch $url0';
     }
   }
   
@@ -29,7 +29,7 @@ class WebScraperService {
       builder: (context) {
         return AlertDialog(
           title: Text('登录并获取课程表'),
-          content: Container(
+          content: SizedBox(
             width: MediaQuery.of(context).size.width * 0.9,
             height: MediaQuery.of(context).size.height * 0.8,
             child: InAppWebView(

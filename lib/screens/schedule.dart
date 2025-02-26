@@ -4,6 +4,8 @@ import '../services/database.dart';
 import 'dart:math' as math;
 
 class ScheduleScreen extends StatefulWidget {
+  const ScheduleScreen({super.key});
+
   @override
   _ScheduleScreenState createState() => _ScheduleScreenState();
 }
@@ -303,13 +305,13 @@ class _ScheduleScreenState extends State<ScheduleScreen> with SingleTickerProvid
           ),
           
           // 课程表主体
-          Container(
+          SizedBox(
             height: maxClassTime * 60.0,  // 每节课高度60
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // 左侧时间栏
-                Container(
+                SizedBox(
                   width: 30,
                   child: Column(
                     children: List.generate(maxClassTime, (index) {
@@ -394,7 +396,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> with SingleTickerProvid
                               ),
                             ),
                           );
-                        }).toList(),
+                        }),
                       ],
                     ),
                   );

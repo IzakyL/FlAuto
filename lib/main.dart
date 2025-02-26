@@ -27,7 +27,7 @@ void main() async {
 class RAMautoMention extends StatelessWidget {
   final NotificationManager notificationManager;
   
-  const RAMautoMention({Key? key, required this.notificationManager}) : super(key: key);
+  const RAMautoMention({super.key, required this.notificationManager});
 
   @override
   Widget build(BuildContext context) {
@@ -42,6 +42,8 @@ class RAMautoMention extends StatelessWidget {
 }
 
 class HomePage extends StatefulWidget {
+  const HomePage({super.key});
+
   @override
   _HomePageState createState() => _HomePageState();
 }

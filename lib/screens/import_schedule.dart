@@ -4,6 +4,8 @@ import '../services/database.dart';
 import '../models/course.dart';
 
 class ImportScheduleScreen extends StatefulWidget {
+  const ImportScheduleScreen({super.key});
+
   @override
   _ImportScheduleScreenState createState() => _ImportScheduleScreenState();
 }
