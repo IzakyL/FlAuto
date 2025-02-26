@@ -1,16 +1,7 @@
 # ramautomention
 
-A new Flutter project.
+使用Flutter构建.
 
-## Getting Started
+持久化通知课程表/考试等内容, 无需手动打开查看.
 
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+项目目前处于早期开发阶段, 尚不可用.
