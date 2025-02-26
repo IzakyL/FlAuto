@@ -1,36 +1,81 @@
 import 'package:flutter/material.dart';
+import 'screens/import_schedule.dart';
+import 'screens/schedule.dart';
+import 'services/notification.dart';
+import 'services/database.dart';
+import 'services/notification_manager.dart';
 
-void main() {
-  runApp(const MyApp());
+void main() async {
+
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // 初始化服务
+  final notificationService = NotificationService();
+  await notificationService.initNotification();
+  
+  final databaseService = DatabaseService();
+  
+  final notificationManager = NotificationManager(
+    notificationService: notificationService,
+    databaseService: databaseService,
+  );
+  await notificationManager.initialize();
+
+  runApp(RAMautoMention(notificationManager: notificationManager));
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class RAMautoMention extends StatelessWidget {
+  final NotificationManager notificationManager;
+  
+  const RAMautoMention({Key? key, required this.notificationManager}) : super(key: key);
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: '课程表通知',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        primarySwatch: Colors.blue,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: HomePage(),
+    );
+  }
+}
+
+class HomePage extends StatefulWidget {
+  @override
+  _HomePageState createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  int _selectedIndex = 0;
+  
+  final List<Widget> _pages = [
+    ScheduleScreen(),
+    ImportScheduleScreen(),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: _pages[_selectedIndex],
+      bottomNavigationBar: BottomNavigationBar(
+        items: [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.calendar_today),
+            label: '课程表',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.cloud_download),
+            label: '导入',
+          ),
+        ],
+        currentIndex: _selectedIndex,
+        onTap: (index) {
+          setState(() {
+            _selectedIndex = index;
+          });
+        },
+      ),
     );
   }
 }
