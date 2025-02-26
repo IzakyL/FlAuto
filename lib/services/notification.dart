@@ -113,6 +113,34 @@ class NotificationService {
     );
   }
 
+  Future<void> showPersistentNotification({
+    required int id,
+    required String title,
+    required String body,
+  }) async {
+    const AndroidNotificationDetails androidPlatformChannelSpecifics =
+      AndroidNotificationDetails(
+        'persistent_channel',  // 频道ID
+        '持久性通知',  // 频道名称
+        channelDescription: '显示课程提醒的持久性通知',  // 频道描述
+        importance: Importance.high,
+        priority: Priority.high,
+        ongoing: true,  // 设置为持久性通知
+        autoCancel: false,  // 防止用户轻易取消
+        styleInformation: BigTextStyleInformation(''),  // 支持长文本显示
+      );
+
+  const NotificationDetails platformChannelSpecifics =
+      NotificationDetails(android: androidPlatformChannelSpecifics);
+
+  await notificationsPlugin.show(
+    id,
+    title,
+    body,
+    platformChannelSpecifics,
+  );
+  }
+
   // 取消特定ID的通知
   Future<void> cancelNotification(int id) async {
     await notificationsPlugin.cancel(id);

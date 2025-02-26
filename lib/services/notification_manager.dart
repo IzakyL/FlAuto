@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'dart:async';
 import 'notification.dart';
 import 'database.dart';
@@ -8,6 +7,9 @@ class NotificationManager {
   final NotificationService _notificationService;
   final DatabaseService _databaseService;
   Timer? _timer;
+  
+  // 使用常量标识持久性通知ID
+  static const int PERSISTENT_NOTIFICATION_ID = 9999;
 
   NotificationManager({
     required NotificationService notificationService,
@@ -18,31 +20,55 @@ class NotificationManager {
   // 初始化通知服务
   Future<void> initialize() async {
     await _notificationService.initNotification();
-    updateNextClassNotification();
+    await updateNextClassNotification();
 
     // 每分钟更新一次通知
-    _timer = Timer.periodic(Duration(minutes: 1), (timer) {
-      updateNextClassNotification();
+    _timer = Timer.periodic(Duration(minutes: 1), (timer) async {
+      await updateNextClassNotification();
     });
   }
 
   // 更新下一节课程的通知
   Future<void> updateNextClassNotification() async {
     Event? nextEvent = await _getNextEvent();
+    
     if (nextEvent != null) {
       // 格式化时间
       String startTime = _formatTime(nextEvent.startTime);
       String endTime = _formatTime(nextEvent.endTime);
       
-      await _notificationService.showNotification(
-        "下一节课程",
-        "课程：${nextEvent.name}\n"
+      await _notificationService.showPersistentNotification(
+        id: PERSISTENT_NOTIFICATION_ID,
+        title: "下一节课程",
+        body: "课程：${nextEvent.name}\n"
             "地点：${nextEvent.location}\n"
             "时间：$startTime - $endTime\n"
             "描述：${nextEvent.description}",
       );
     } else {
-      await _notificationService.showNotification("今日课程", "今天没有更多课程了");
+      // 尝试获取下一个工作日的课程
+      Event? nextWorkDayEvent = await _getNextWorkDayEvent();
+      
+      if (nextWorkDayEvent != null) {
+        String startTime = _formatTime(nextWorkDayEvent.startTime);
+        String endTime = _formatTime(nextWorkDayEvent.endTime);
+        String nextDate = "${nextWorkDayEvent.startTime.month}月${nextWorkDayEvent.startTime.day}日";
+        
+        await _notificationService.showPersistentNotification(
+          id: PERSISTENT_NOTIFICATION_ID,
+          title: "下一个工作日课程",
+          body: "日期：$nextDate\n"
+              "课程：${nextWorkDayEvent.name}\n"
+              "地点：${nextWorkDayEvent.location}\n"
+              "时间：$startTime - $endTime",
+        );
+      } else {
+        await _notificationService.showPersistentNotification(
+          id: PERSISTENT_NOTIFICATION_ID,
+          title: "课程提醒", 
+          body: "近期没有安排的课程"
+        );
+      }
     }
   }
 
@@ -53,63 +79,12 @@ class NotificationManager {
 
   // 获取下一节课程
   Future<Event?> _getNextEvent() async {
-    final events = await _databaseService.getEvents();
-    if (events.isEmpty) {
-      return null;
-    }
-
-    final now = DateTime.now();
-    
-    // 筛选出今天剩余的课程（开始时间在当前时间之后的课程）
-    List<Event> todayEvents = events.where((event) {
-      // 检查是否是同一天
-      bool isSameDay = event.startTime.year == now.year && 
-                        event.startTime.month == now.month && 
-                        event.startTime.day == now.day;
-      
-      // 检查开始时间是否在当前时间之后
-      bool isAfterNow = event.startTime.isAfter(now);
-      
-      return isSameDay && isAfterNow;
-    }).toList();
-
-    // 按照开始时间排序
-    todayEvents.sort((a, b) => a.startTime.compareTo(b.startTime));
-
-    // 返回最近的一节课
-    return todayEvents.isNotEmpty ? todayEvents.first : null;
+    // ...existing code...
   }
 
   // 查找下一个工作日的第一节课
   Future<Event?> _getNextWorkDayEvent() async {
-    final events = await _databaseService.getEvents();
-    if (events.isEmpty) {
-      return null;
-    }
-
-    final now = DateTime.now();
-    DateTime nextDay = now.add(Duration(days: 1));
-    
-    // 最多查找未来7天
-    for (int i = 0; i < 7; i++) {
-      // 筛选下一天的课程
-      List<Event> nextDayEvents = events.where((event) {
-        return event.startTime.year == nextDay.year &&
-               event.startTime.month == nextDay.month &&
-               event.startTime.day == nextDay.day;
-      }).toList();
-
-      if (nextDayEvents.isNotEmpty) {
-        // 按照开始时间排序
-        nextDayEvents.sort((a, b) => a.startTime.compareTo(b.startTime));
-        return nextDayEvents.first;
-      }
-      
-      // 继续查找下一天
-      nextDay = nextDay.add(Duration(days: 1));
-    }
-    
-    return null;
+    // ...existing code...
   }
 
   // 为即将到来的课程设置提醒
@@ -134,7 +109,14 @@ class NotificationManager {
     }
   }
 
+  // 移除持久性通知
+  Future<void> cancelPersistentNotification() async {
+    await _notificationService.cancelNotification(PERSISTENT_NOTIFICATION_ID);
+  }
+
   void dispose() {
     _timer?.cancel();
+    // 清理通知
+    cancelPersistentNotification();
   }
 }
