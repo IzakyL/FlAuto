@@ -39,7 +39,7 @@ class WebScraperService {
               initialUrlRequest: URLRequest(url: Uri.parse(url)),
               onLoadStop: (controller, url) async {
                 // 检测到用户已登录并进入课程表页面
-                if (url.toString().contains('课程表页面的特定标识')) {
+                if (url.toString().contains('https://jw.ustc.edu.cn/for-std/course-table/get-data')) {
                   // 延迟执行，确保页面完全加载
                   await Future.delayed(Duration(seconds: 2));
 
@@ -48,50 +48,41 @@ class WebScraperService {
                     source: """
                     // 这里编写提取课程信息的JavaScript代码
                     (function() {
-                      var events = [];
-                      try {
-                        // 假设课程表在某个表格中
-                        var table = document.querySelector('.event-table');
-                        if (table) {
-                          var rows = table.querySelectorAll('tr');
-                          rows.forEach(function(row, rowIndex) {
-                            if (rowIndex > 0) { // 跳过表头
-                              var cells = row.querySelectorAll('td');
-                              
-                              // 获取基础数据
-                              var name = cells[0].innerText.trim();
-                              var teacher = cells[1].innerText.trim();
-                              var classroom = cells[2].innerText.trim();
-                              var weekday = parseInt(cells[3].innerText);
-                              var startTime = parseInt(cells[4].innerText);
-                              var endTime = parseInt(cells[5].innerText);
-                              var startWeek = parseInt(cells[6].innerText);
-                              var endWeek = parseInt(cells[7].innerText);
-                              
-                              // 组合描述信息
-                              var description = '授课教师: ' + teacher + 
-                                              '\\n周次: ' + startWeek + '-' + endWeek + '周';
-                              
-                              events.push({
-                                name: name,
-                                location: classroom,
-                                description: description,
-                                weekday: weekday,
-                                startTime: startTime,
-                                endTime: endTime,
-                                startWeek: startWeek,
-                                endWeek: endWeek,
-                                // 保留原始数据以便后续处理
-                                rawTeacher: teacher,
-                                rawClassroom: classroom
-                              });
+                      try{
+                        var classes=[];
+                        var table=document.getElementsByClassName('timetable');
+                        var tbodies=table.getElementsByTagName('tbody');
+                        for(tbody of tbodies){
+                          var trs=tbody.getElementsByTagName('tr');
+                          for(tr of trs){
+                            var tds=tbody.getElementsByTagName('td');
+                            for(let td of tds){
+                              var cells=getElementsByClassName('cell');
+                              for(let cell of cells){
+                                var cs=getElementsByClassName('c');
+                                for(let c of cs){
+                                  var number=c.getElementsByClassName('number');
+                                  var title=c.getElementsByClassName('title');
+                                  var teacher=c.getElementsByClassName('teacher');
+                                  var time=c.getElementsByClassName('time');
+                                  var classroom=c.getElementsByClassName('classroom');
+                                  classes.push({
+                                    number:number,
+                                    title:title,
+                                    teacher:teacher,
+                                    time:time,
+                                    classroom:classroom
+                                  });
+                                }
+                              }
                             }
-                          });
+                          }
                         }
-                      } catch(e) {
-                        console.error(e);
+                      }catch(err){
+                        console.log(err);
                       }
-                      return JSON.stringify(events);
+                      console.log(classes);
+                      return JSON.stringify(classes);
                     })();
                   """,
                   );
