@@ -23,9 +23,9 @@ class NotificationService {
     // 初始化插件
     await notificationsPlugin.initialize(
       initializationSettings,
-      onSelectNotification: (String? payload) {
+      onDidReceiveNotificationResponse: (NotificationResponse notificationResponse) {
         // 处理通知点击事件
-        print("通知点击: $payload");
+        print("通知点击: ${notificationResponse.payload}");
       },
     );
     
@@ -35,10 +35,6 @@ class NotificationService {
 
   // 请求通知权限
   Future<void> _requestPermissions() async {
-    await notificationsPlugin
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
-        ?.requestPermission();
-        
     await notificationsPlugin
         .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
         ?.requestPermissions(
@@ -106,9 +102,8 @@ class NotificationService {
       body,
       scheduledDate,
       notificationDetails,
-      androidAllowWhileIdle: true,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
       matchDateTimeComponents: DateTimeComponents.time,
     );
   }
