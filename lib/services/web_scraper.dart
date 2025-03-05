@@ -1,7 +1,9 @@
-import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'dart:convert';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:url_launcher/url_launcher.dart';
+
 import '../models/event.dart';
 import 'database.dart';
 
@@ -36,10 +38,14 @@ class WebScraperService {
             width: MediaQuery.of(context).size.width * 0.9,
             height: MediaQuery.of(context).size.height * 0.8,
             child: InAppWebView(
-              initialUrlRequest: URLRequest(url: Uri.parse(url)),
+              initialUrlRequest: URLRequest(
+                url: WebUri(Uri.parse(url).toString()),
+              ),
               onLoadStop: (controller, url) async {
                 // 检测到用户已登录并进入课程表页面
-                if (url.toString().contains('https://jw.ustc.edu.cn/for-std/course-table/get-data')) {
+                if (url.toString().contains(
+                  'https://jw.ustc.edu.cn/for-std/course-table/get-data',
+                )) {
                   // 延迟执行，确保页面完全加载
                   await Future.delayed(Duration(seconds: 2));
 
@@ -90,62 +96,80 @@ class WebScraperService {
                   if (result != null) {
                     // 解析JavaScript返回的JSON数据
                     List<dynamic> parsedData = jsonDecode(result);
-                    
+
                     // 获取当前学期开始日期（假设学期从2024年2月26日开始）
-                    DateTime semesterStart = DateTime(2024, 2, 26); // 调整为实际的学期开始日期
-                    
+                    DateTime semesterStart = DateTime(
+                      2024,
+                      2,
+                      26,
+                    ); // 调整为实际的学期开始日期
+
                     for (var eventData in parsedData) {
                       // 将节次转换为当天的具体时间
                       Map<int, TimeOfDay> classTimeMap = {
-                        1: TimeOfDay(hour: 8, minute: 0),   // 第1节：8:00
-                        2: TimeOfDay(hour: 8, minute: 50),  // 第2节：8:50
-                        3: TimeOfDay(hour: 10, minute: 0),  // 第3节：10:00
-                        4: TimeOfDay(hour: 10, minute: 50), // 第4节：10:50
-                        5: TimeOfDay(hour: 14, minute: 0),  // 第5节：14:00
-                        6: TimeOfDay(hour: 14, minute: 50), // 第6节：14:50
-                        7: TimeOfDay(hour: 16, minute: 0),  // 第7节：16:00
-                        8: TimeOfDay(hour: 16, minute: 50), // 第8节：16:50
-                        9: TimeOfDay(hour: 19, minute: 0),  // 第9节：19:00
-                        10: TimeOfDay(hour: 19, minute: 50),// 第10节：19:50
-                        11: TimeOfDay(hour: 20, minute: 40),// 第11节：20:40
+                        1: TimeOfDay(hour: 7, minute: 50),
+                        2: TimeOfDay(hour: 8, minute: 40),
+                        3: TimeOfDay(hour: 9, minute: 45),
+                        4: TimeOfDay(hour: 10, minute: 35),
+                        5: TimeOfDay(hour: 11, minute: 25),
+                        6: TimeOfDay(hour: 14, minute: 0),
+                        7: TimeOfDay(hour: 14, minute: 50),
+                        8: TimeOfDay(hour: 15, minute: 55),
+                        9: TimeOfDay(hour: 16, minute: 45),
+                        10: TimeOfDay(hour: 14, minute: 35),
+                        11: TimeOfDay(hour: 19, minute: 30),
+                        12: TimeOfDay(hour: 20, minute: 20),
+                        13: TimeOfDay(hour: 21, minute: 10),
                       };
-                      
+
                       // 课程的周几（1-7对应周一至周日）
                       int weekday = eventData['weekday'];
                       int startWeek = eventData['startWeek'];
-                      
+
                       // 计算课程的第一次上课日期
                       // 先找到学期开始的那周的周一，然后加上weekday-1天（周一加0天，周二加1天...）
-                      DateTime firstDayOfSemester = _findFirstDayOfWeek(semesterStart);
-                      DateTime firstClassDay = firstDayOfSemester.add(Duration(days: weekday - 1));
-                      
+                      DateTime firstDayOfSemester = _findFirstDayOfWeek(
+                        semesterStart,
+                      );
+                      DateTime firstClassDay = firstDayOfSemester.add(
+                        Duration(days: weekday - 1),
+                      );
+
                       // 再加上(startWeek-1)周，得到课程开始的具体日期
-                      DateTime classDate = firstClassDay.add(Duration(days: (startWeek - 1) * 7));
-                      
+                      DateTime classDate = firstClassDay.add(
+                        Duration(days: (startWeek - 1) * 7),
+                      );
+
                       // 设置课程开始和结束时间
-                      TimeOfDay startTimeOfDay = classTimeMap[eventData['startTime']] ?? TimeOfDay(hour: 8, minute: 0);
-                      TimeOfDay endTimeOfDay = classTimeMap[eventData['endTime']] ?? TimeOfDay(hour: 8, minute: 50);
-                      
+                      TimeOfDay startTimeOfDay =
+                          classTimeMap[eventData['startTime']] ??
+                          TimeOfDay(hour: 8, minute: 0);
+                      TimeOfDay endTimeOfDay =
+                          classTimeMap[eventData['endTime']] ??
+                          TimeOfDay(hour: 8, minute: 50);
+
                       // 合并日期和时间
                       DateTime startDateTime = DateTime(
-                        classDate.year, 
-                        classDate.month, 
+                        classDate.year,
+                        classDate.month,
                         classDate.day,
                         startTimeOfDay.hour,
-                        startTimeOfDay.minute
+                        startTimeOfDay.minute,
                       );
-                      
+
                       DateTime endDateTime = DateTime(
-                        classDate.year, 
-                        classDate.month, 
+                        classDate.year,
+                        classDate.month,
                         classDate.day,
                         endTimeOfDay.hour,
-                        endTimeOfDay.minute
+                        endTimeOfDay.minute,
                       );
-                      
+
                       // 格式化地点信息
-                      String location = _formatLocation(eventData['rawClassroom']);
-                      
+                      String location = _formatLocation(
+                        eventData['rawClassroom'],
+                      );
+
                       // 创建Event对象
                       Event event = Event(
                         name: eventData['name'],
@@ -154,7 +178,7 @@ class WebScraperService {
                         description: eventData['description'],
                         location: location,
                       );
-                      
+
                       events.add(event);
                       await _databaseService.insertEvent(event);
                     }
@@ -190,7 +214,7 @@ class WebScraperService {
 
     return events;
   }
-  
+
   // 查找指定日期所在周的第一天（周一）
   DateTime _findFirstDayOfWeek(DateTime date) {
     // 周一=1, 周日=7
@@ -199,7 +223,7 @@ class WebScraperService {
     int daysToSubtract = weekday - 1;
     return date.subtract(Duration(days: daysToSubtract));
   }
-  
+
   // 格式化地点信息
   String _formatLocation(String rawClassroom) {
     if (rawClassroom.length > 1) {
@@ -209,26 +233,5 @@ class WebScraperService {
       return '$buildingName $roomNumber';
     }
     return rawClassroom;
-  }
-
-  // 抓取特定教务系统的课程表并解析
-  // 这部分需要根据具体学校的教务系统定制
-  Future<List<Event>> scrapeEventSchedule(
-    BuildContext context,
-    String schoolSystem,
-  ) async {
-    switch (schoolSystem) {
-      case 'zfsoft': // 正方教务系统
-        return await fetchEventsWithWebView(
-          context,
-          'http://your-school-educational-system.com/login',
-        );
-      case 'custom':
-        // 其他教务系统
-        break;
-      default:
-        throw Exception('不支持的教务系统');
-    }
-    return [];
   }
 }
