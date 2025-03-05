@@ -31,11 +31,11 @@ class _ImportScheduleScreenState extends State<ImportScheduleScreen> {
             ),
             SizedBox(height: 20),
             ElevatedButton(
-              onPressed: _isLoading ? null : () => _importFromWebsite('zfsoft'),
+              onPressed: _isLoading ? null : () => _importFromWebsite('jw.ustc.edu.cn'),
               child:
                   _isLoading
                       ? CircularProgressIndicator(color: Colors.white)
-                      : Text('从正方教务系统导入'),
+                      : Text('jw.ustc.edu.cn'),
             ),
             SizedBox(height: 12),
             ElevatedButton(
@@ -74,7 +74,7 @@ class _ImportScheduleScreenState extends State<ImportScheduleScreen> {
     });
 
     try {
-      final events = await _webScraperService.scrapeEventSchedule(
+      final events = await _webScraperService.fetchEventsWithWebView(
         context,
         schoolSystem,
       );
@@ -95,7 +95,7 @@ class _ImportScheduleScreenState extends State<ImportScheduleScreen> {
   Future<void> _launchBrowser() async {
     try {
       await _webScraperService.openBrowserForLogin(
-        'http://your-school-educational-system.com/login',
+        'https://jw.ustc.edu.cn/for-std/course-table/get-data',
       );
       ScaffoldMessenger.of(
         context,
