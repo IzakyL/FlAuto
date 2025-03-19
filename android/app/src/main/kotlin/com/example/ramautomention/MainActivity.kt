@@ -1,4 +1,4 @@
-package com.example.ramautomention
+package com.example.flauto
 
 import io.flutter.embedding.android.FlutterActivity
 import android.os.Bundle

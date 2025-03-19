@@ -6,36 +6,33 @@ import 'services/database.dart';
 import 'services/notification_manager.dart';
 
 void main() async {
-
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // 初始化服务
   final notificationService = NotificationService();
   await notificationService.initNotification();
-  
+
   final databaseService = DatabaseService();
-  
+
   final notificationManager = NotificationManager(
     notificationService: notificationService,
     databaseService: databaseService,
   );
   await notificationManager.initialize();
 
-  runApp(RAMautoMention(notificationManager: notificationManager));
+  runApp(flauto(notificationManager: notificationManager));
 }
 
-class RAMautoMention extends StatelessWidget {
+class flauto extends StatelessWidget {
   final NotificationManager notificationManager;
-  
-  const RAMautoMention({super.key, required this.notificationManager});
+
+  const flauto({super.key, required this.notificationManager});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: '课程表通知',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
+      theme: ThemeData(primarySwatch: Colors.blue),
       home: HomePage(),
     );
   }
@@ -50,11 +47,8 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
-  
-  final List<Widget> _pages = [
-    ScheduleScreen(),
-    ImportScheduleScreen(),
-  ];
+
+  final List<Widget> _pages = [ScheduleScreen(), ImportScheduleScreen()];
 
   @override
   Widget build(BuildContext context) {

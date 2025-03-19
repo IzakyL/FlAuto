@@ -79,11 +79,15 @@ class NotificationManager {
 
   // 获取下一节课程
   Future<Event?> _getNextEvent() async {
+    return null;
+  
     // ...existing code...
   }
 
   // 查找下一个工作日的第一节课
   Future<Event?> _getNextWorkDayEvent() async {
+    return null;
+  
     // ...existing code...
   }
 

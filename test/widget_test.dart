@@ -9,14 +9,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 
-import 'package:ramautomention/main.dart';
-import 'package:ramautomention/services/notification_manager.dart';
-import 'package:ramautomention/services/notification.dart';
-import 'package:ramautomention/services/database.dart';
+import 'package:flauto/main.dart';
+import 'package:flauto/services/notification_manager.dart';
+import 'package:flauto/services/notification.dart';
+import 'package:flauto/services/database.dart';
 
 // 创建模拟对象
 class MockNotificationManager extends Mock implements NotificationManager {}
+
 class MockNotificationService extends Mock implements NotificationService {}
+
 class MockDatabaseService extends Mock implements DatabaseService {}
 
 void main() {
@@ -30,14 +32,16 @@ void main() {
     );
 
     // Build our app and trigger a frame.
-    await tester.pumpWidget(RAMautoMention(notificationManager: mockNotificationManager));
+    await tester.pumpWidget(
+      flauto(notificationManager: mockNotificationManager),
+    );
 
     // 验证应用已成功启动
     expect(find.byType(MaterialApp), findsOneWidget);
-    
+
     // 验证底部导航栏存在
     expect(find.byType(BottomNavigationBar), findsOneWidget);
-    
+
     // 验证课程表选项卡初始显示
     expect(find.text('课程表'), findsOneWidget);
     expect(find.text('导入'), findsOneWidget);
