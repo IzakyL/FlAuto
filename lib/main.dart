@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'screens/import_schedule.dart';
-import 'screens/schedule.dart';
+import 'pages/import_schedule.dart';
+import 'pages/display_schedule.dart';
 import 'services/notification.dart';
 import 'services/database.dart';
 import 'services/notification_manager.dart';
@@ -20,13 +20,13 @@ void main() async {
   );
   await notificationManager.initialize();
 
-  runApp(flauto(notificationManager: notificationManager));
+  runApp(FlAuto(notificationManager: notificationManager));
 }
 
-class flauto extends StatelessWidget {
+class FlAuto extends StatelessWidget {
   final NotificationManager notificationManager;
 
-  const flauto({super.key, required this.notificationManager});
+  const FlAuto({super.key, required this.notificationManager});
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +48,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
 
-  final List<Widget> _pages = [ScheduleScreen(), ImportScheduleScreen()];
+  final List<Widget> _pages = [DisplaySchedulePage(), ImportSchedulePage()];
 
   @override
   Widget build(BuildContext context) {

@@ -33,7 +33,7 @@ void main() {
 
     // Build our app and trigger a frame.
     await tester.pumpWidget(
-      flauto(notificationManager: mockNotificationManager),
+      FlAuto(notificationManager: mockNotificationManager),
     );
 
     // 验证应用已成功启动
